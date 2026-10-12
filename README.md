@@ -6,7 +6,7 @@ If you were handed an OpenRouter API key by someone else (a team lead, a client,
 
 **→ [Open the live page](https://amir14a.github.io/openrouter-usage-info/)**
 
-![OpenRouter Usage Info showing remaining balance, spend progress, and limit reset](docs/screenshot.png)
+<img src="docs/screenshot.png" alt="OpenRouter Usage Info showing remaining balance, spend progress, and limit reset" width="450">
 
 ---
 
