@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OpenRouter Usage</title>
+<style>
+  :root {
+    --bg: #0b0d12;
+    --surface: #12151d;
+    --surface-2: #171b25;
+    --border: #242938;
+    --text: #e8eaf0;
+    --muted: #8b93a7;
+    --faint: #5b647a;
+    --accent: #6d8bff;
+    --accent-soft: #6d8bff22;
+    --good: #3ddc97;
+    --warn: #ffb454;
+    --bad: #ff6b6b;
+    --radius: 14px;
+    --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: light) {
+    :root {
+      --bg: #f7f8fa;
+      --surface: #ffffff;
+      --surface-2: #f2f4f8;
+      --border: #e3e7ee;
+      --text: #14181f;
+      --muted: #626b7d;
+      --faint: #9aa3b4;
+      --accent: #4059d6;
+      --accent-soft: #4059d614;
+      --good: #16a06a;
+      --warn: #b26a00;
+      --bad: #d64545;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 40px 20px 64px;
+  }
+  .app { width: 100%; max-width: 560px; }
+
+  header { display: flex; align-items: center; gap: 10px; margin-bottom: 22px; }
+  .logo {
+    width: 28px; height: 28px; flex: none;
+    border-radius: 8px;
+    background: linear-gradient(140deg, var(--accent), #a06dff);
+    display: grid; place-items: center;
+  }
+  .logo svg { width: 15px; height: 15px; }
+  h1 { font-size: 15px; font-weight: 600; margin: 0; letter-spacing: -0.01em; }
+  .sub { font-size: 12px; color: var(--faint); margin-left: auto; font-family: var(--mono); }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+  }
+  .card + .card { margin-top: 14px; }
+
+  label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 7px; font-weight: 500; }
+  .row { display: flex; gap: 8px; }
+  input[type=password], input[type=text] {
+    flex: 1; min-width: 0;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    padding: 10px 12px;
+    font: 13px/1.4 var(--mono);
+    outline: none;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+
+  /* auto-update interval: label left, select right.
+     No top border — the preceding .kv row already supplies the rule. */
+  .field-row {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    margin-top: 16px;
+  }
+  .field-row label { margin: 0; }
+  select {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    padding: 8px 10px;
+    font: 12.5px/1.4 inherit;
+    outline: none;
+    cursor: pointer;
+    transition: border-color .15s, box-shadow .15s;
+    /* native arrow, but themed */
+    appearance: none; -webkit-appearance: none;
+    background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%),
+                      linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+    background-position: calc(100% - 15px) 52%, calc(100% - 10px) 52%;
+    background-size: 5px 5px, 5px 5px;
+    background-repeat: no-repeat;
+    padding-right: 30px;
+  }
+  select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+  select option { background: var(--surface); color: var(--text); }
+
+  button {
+    font: 500 13px/1 inherit;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--surface-2);
+    color: var(--text);
+    padding: 10px 14px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background .15s, border-color .15s, opacity .15s;
+  }
+  button:hover:not(:disabled) { border-color: var(--faint); }
+  button:disabled { opacity: .45; cursor: default; }
+  button.primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+    width: 100%;
+  }
+  button.primary:hover:not(:disabled) { filter: brightness(1.08); }
+  button.ghost { background: transparent; padding: 10px 11px; }
+
+  .hint { font-size: 12px; color: var(--faint); margin-top: 10px; line-height: 1.55; }
+  .hint code {
+    font-family: var(--mono); font-size: 11.5px;
+    background: var(--surface-2); border: 1px solid var(--border);
+    padding: 1px 5px; border-radius: 5px;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  /* results */
+  #result { display: none; }
+  .hero { text-align: center; padding: 6px 0 20px; }
+  .hero .k { font-size: 12px; color: var(--muted); letter-spacing: .04em; text-transform: uppercase; }
+  .hero .v {
+    font: 600 42px/1.1 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    letter-spacing: -0.025em;
+    margin: 8px 0 0;
+    font-variant-numeric: tabular-nums;
+  }
+  .hero .v .cur { font-size: 22px; color: var(--muted); font-weight: 500; margin-right: 2px; }
+  .hero .note { font-size: 12.5px; color: var(--muted); margin-top: 8px; }
+
+  .bar {
+    height: 6px; border-radius: 99px; background: var(--surface-2);
+    overflow: hidden; margin: 18px 0 10px; border: 1px solid var(--border);
+  }
+  .bar > i { display: block; height: 100%; border-radius: 99px; transition: width .5s cubic-bezier(.4,0,.2,1); }
+  .bar-meta { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  /* second bar: label row above a slightly slimmer track */
+  .bar-label {
+    display: flex; justify-content: space-between; align-items: baseline; gap: 12px;
+    font-size: 12px; color: var(--muted); margin: 16px 0 7px;
+  }
+  .bar-label .when { color: var(--text); }
+  .bar.slim { margin: 0 0 7px; height: 5px; }
+  .bar-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin-right: 6px; vertical-align: 1px; }
+
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin-top: 18px; }
+  .grid > div { background: var(--surface); padding: 13px 14px; }
+  .grid .k { font-size: 11px; color: var(--muted); margin-bottom: 5px; }
+  .grid .v { font: 500 14.5px var(--mono); font-variant-numeric: tabular-nums; }
+
+  .kv { margin-top: 18px; border-top: 1px solid var(--border); }
+  .kv > div { display: flex; justify-content: space-between; gap: 16px; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 13.5px; }
+  .kv .k { color: var(--muted); flex: none; }
+  .kv .v { font-family: var(--mono); font-size: 12.5px; text-align: right; overflow-wrap: anywhere; }
+  /* stacked value: relative time above, exact timestamp below */
+  .kv .v .rel { display: block; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 13px; }
+  .kv .v .abs { display: block; font-size: 11px; color: var(--faint); margin-top: 2px; }
+
+  .pill { display: inline-block; font: 500 11px/1 var(--mono); padding: 4px 8px; border-radius: 99px; border: 1px solid var(--border); }
+  .pill.good { color: var(--good); border-color: color-mix(in srgb, var(--good) 35%, transparent); background: color-mix(in srgb, var(--good) 10%, transparent); }
+  .pill.warn { color: var(--warn); border-color: color-mix(in srgb, var(--warn) 35%, transparent); background: color-mix(in srgb, var(--warn) 10%, transparent); }
+  .pill.bad  { color: var(--bad);  border-color: color-mix(in srgb, var(--bad) 35%, transparent);  background: color-mix(in srgb, var(--bad) 10%, transparent); }
+
+  .banner {
+    display: none;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--warn);
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-size: 12.5px;
+    color: var(--muted);
+    line-height: 1.55;
+    margin-top: 14px;
+  }
+  .banner b { color: var(--text); font-weight: 600; }
+
+  .err {
+    display: none;
+    border: 1px solid color-mix(in srgb, var(--bad) 40%, var(--border));
+    background: color-mix(in srgb, var(--bad) 8%, transparent);
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-size: 13px;
+    line-height: 1.55;
+    margin-top: 14px;
+  }
+  .err b { color: var(--bad); }
+
+  .foot { display: flex; align-items: center; justify-content: space-between; margin-top: 12px; font-size: 11.5px; color: var(--faint); }
+  .foot > span:last-child { display: flex; align-items: center; gap: 6px; }
+  .tick { font-variant-numeric: tabular-nums; }
+  .spin { display: inline-block; width: 12px; height: 12px; border: 2px solid #ffffff55; border-top-color: #fff; border-radius: 50%; animation: sp .7s linear infinite; vertical-align: -2px; }
+  @keyframes sp { to { transform: rotate(360deg); } }
+  @media (max-width: 460px) { .grid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header>
+    <div class="logo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 17l5-5 4 3 6-7"/><path d="M14 8h4v4"/>
+      </svg>
+    </div>
+    <h1>OpenRouter Usage</h1>
+    <span class="sub" id="updated"></span>
+  </header>
+
+  <!-- API key -->
+  <div class="card" id="authCard">
+    <label for="key">API key</label>
+    <div class="row">
+      <input id="key" type="password" placeholder="sk-or-v1-..." spellcheck="false" autocomplete="off">
+      <button class="ghost" id="toggle" title="Show / hide">Show</button>
+    </div>
+    <button class="primary" id="load" style="margin-top:12px">Check usage</button>
+    <div class="hint">
+      Sent directly to <code>openrouter.ai</code> from your browser — nothing passes through any other server.
+      Stored only in this tab's <code>sessionStorage</code>. Get a key at
+      <a href="https://openrouter.ai/keys" target="_blank" rel="noopener">openrouter.ai/keys</a>.
+    </div>
+    <div class="err" id="err"></div>
+  </div>
+
+  <!-- results -->
+  <div id="result">
+    <div class="card">
+      <div class="hero">
+        <div class="k" id="heroLabel">Remaining</div>
+        <p class="v" id="heroValue">—</p>
+        <div class="note" id="heroNote"></div>
+      </div>
+
+      <div id="barWrap" style="display:none">
+        <div class="bar"><i id="bar"></i></div>
+        <div class="bar-meta">
+          <span id="barLeft"></span>
+          <span id="barRight"></span>
+        </div>
+      </div>
+
+      <div id="resetBarWrap" style="display:none">
+        <div class="bar-label">
+          <span><span class="bar-dot" id="resetDot"></span>Limit resets <span class="when" id="resetWhen"></span></span>
+          <span id="resetPct"></span>
+        </div>
+        <div class="bar slim"><i id="resetBar"></i></div>
+        <div class="bar-meta">
+          <span id="resetFrom"></span>
+          <span id="resetTo"></span>
+        </div>
+      </div>
+
+      <div class="grid">
+        <div><div class="k">Total spend</div><div class="v" id="mUsage">—</div></div>
+        <div><div class="k">Limit</div><div class="v" id="mLimit">—</div></div>
+        <div><div class="k">Remaining</div><div class="v" id="mRemain">—</div></div>
+      </div>
+
+      <div class="kv">
+        <div><span class="k">Today</span><span class="v" id="kDay">—</span></div>
+        <div><span class="k">This week</span><span class="v" id="kWeek">—</span></div>
+        <div><span class="k">This month</span><span class="v" id="kMonth">—</span></div>
+        <div><span class="k">Label</span><span class="v" id="kLabel">—</span></div>
+        <div><span class="k">Tier</span><span class="v" id="kTier">—</span></div>
+        <div><span class="k">Rate limit</span><span class="v" id="kRate">—</span></div>
+        <div><span class="k">Key status</span><span class="v" id="kStatus">—</span></div>
+      </div>
+
+      <div class="banner" id="banner"></div>
+
+      <div class="field-row">
+        <label for="interval">Auto update</label>
+        <select id="interval">
+          <option value="0" selected>Off</option>
+          <option value="15">Every 15 seconds</option>
+          <option value="30">Every 30 seconds</option>
+          <option value="60">Every minute</option>
+          <option value="120">Every 2 minutes</option>
+          <option value="300">Every 5 minutes</option>
+        </select>
+      </div>
+
+      <div class="foot">
+        <span id="scopeNote">Key-scoped figures</span>
+        <span><span id="nextTick" class="tick"></span><button class="ghost" id="refresh" style="font-size:11.5px;padding:6px 10px">Refresh</button>
+        <button class="ghost" id="signout" style="font-size:11.5px;padding:6px 10px">Change key</button></span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var ENDPOINT = "https://openrouter.ai/api/v1/auth/key";
+  var SS_KEY = "openrouter_usage_key";
+
+  var $ = function (id) { return document.getElementById(id); };
+  var keyEl = $("key"), loadBtn = $("load"), errEl = $("err"),
+      resultEl = $("result"), authCard = $("authCard"), bannerEl = $("banner");
+
+  /* ---------- formatting ---------- */
+
+  /** Money with 2 decimals, or more precision for tiny non-zero amounts. */
+  function money(n) {
+    if (typeof n !== "number" || !isFinite(n)) return "—";
+    if (n !== 0 && Math.abs(n) < 0.01) return "$" + n.toFixed(4);
+    return "$" + n.toLocaleString(undefined, {
+      minimumFractionDigits: 2, maximumFractionDigits: 2
+    });
+  }
+
+  /** Split a formatted amount so the "$" can be styled smaller. */
+  function moneyParts(n) {
+    var s = money(n);
+    return s === "—" ? { cur: "", val: "—" } : { cur: "$", val: s.slice(1) };
+  }
+
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+
+  function isNum(v) { return typeof v === "number" && isFinite(v); }
+
+  /**
+   * Parse a resets_at value into a Date.
+   * Accepts ISO-8601 strings, epoch seconds and epoch milliseconds.
+   * @returns {Date|null} null when the value is absent or unparseable.
+   */
+  function parseWhen(v) {
+    if (v === null || v === undefined || v === "") return null;
+    if (isNum(v)) {
+      // Values below ~1e12 are epoch seconds, not milliseconds.
+      var ms = v < 1e12 ? v * 1000 : v;
+      var d = new Date(ms);
+      return isNaN(d.getTime()) ? null : d;
+    }
+    if (typeof v === "string") {
+      // Bare numeric strings follow the same seconds/milliseconds rule.
+      if (/^\d+$/.test(v.trim())) return parseWhen(Number(v));
+      var p = new Date(v);
+      return isNaN(p.getTime()) ? null : p;
+    }
+    return null;
+  }
+
+  /**
+   * Human relative duration, e.g. "in 20 days and 4 hours", "in 3 minutes".
+   * Keeps at most two units, and rounds up so a reset is never shown as past
+   * while it is still in the future.
+   */
+  function relative(target) {
+    var ms = target.getTime() - Date.now();
+    if (ms <= 0) return "due now";
+
+    var mins  = Math.ceil(ms / 60000);
+    var hours = Math.floor(mins / 60);
+    var days  = Math.floor(hours / 24);
+
+    if (days > 0) {
+      var rh = hours % 24;
+      return "in " + days + " " + plural(days, "day") +
+             (rh > 0 ? " and " + rh + " " + plural(rh, "hour") : "");
+    }
+    if (hours > 0) {
+      var rm = mins % 60;
+      return "in " + hours + " " + plural(hours, "hour") +
+             (rm > 0 ? " and " + rm + " " + plural(rm, "minute") : "");
+    }
+    return "in " + mins + " " + plural(mins, "minute");
+  }
+
+  function plural(n, word) { return n === 1 ? word : word + "s"; }
+
+  /** Exact local timestamp, e.g. "Mon, 3 Nov 2026, 14:32". */
+  function exactStamp(d) {
+    try {
+      return d.toLocaleString(undefined, {
+        weekday: "short", day: "numeric", month: "short",
+        year: "numeric", hour: "2-digit", minute: "2-digit"
+      });
+    } catch (e) {
+      return d.toString();
+    }
+  }
+
+  /**
+   * Find the reset window for the key_limit budget.
+   *
+   * The API supplies only two relevant fields: `resets_at` (when the cycle
+   * ends) and `reset_interval` (the cycle length). The window start is derived
+   * by subtracting the interval from `resets_at`.
+   *
+   * @returns {{end: Date, start: Date|null, interval: number}|null}
+   */
+  function resetWindow(d) {
+    var budgets = d.budgets;
+    if (!Array.isArray(budgets) || budgets.length === 0) return null;
+
+    var b = null;
+    for (var i = 0; i < budgets.length; i++) {
+      if (budgets[i] && budgets[i].scope === "key_limit") { b = budgets[i]; break; }
+    }
+    if (!b) {
+      for (var j = 0; j < budgets.length; j++) {
+        if (budgets[j] && budgets[j].resets_at !== undefined) { b = budgets[j]; break; }
+      }
+    }
+    if (!b) return null;
+
+    var end = parseWhen(b.resets_at);
+    if (!end) return null;
+
+    var span = intervalMs(b.reset_interval);
+    return {
+      end: end,
+      start: span > 0 ? new Date(end.getTime() - span) : null,
+      interval: span
+    };
+  }
+
+  /**
+   * Cycle length in milliseconds from a `reset_interval` value.
+   *
+   * Handles named intervals ("monthly", "daily", "weekly", "hourly"), duration
+   * strings ("30d", "30 days", "24h"), ISO-8601 durations ("P30D", "PT24H"),
+   * plain numbers (read as days) and objects ({months: 1}, {days: 30}).
+   *
+   * A month is treated as 30 days and a year as 365, per the documented
+   * approximation — a reset window is a spend cycle, not a calendar date.
+   *
+   * @returns {number} milliseconds, or 0 when the interval is unknown.
+   */
+  function intervalMs(raw) {
+    if (raw === null || raw === undefined || raw === "") return 0;
+
+    var DAY = 86400000;
+
+    /* object form: {months:1, days:30, hours:24, ...} */
+    if (raw && typeof raw === "object") {
+      var o = 0;
+      o += (Number(raw.years)   || 0) * 365 * DAY;
+      o += (Number(raw.months)  || 0) * 30 * DAY;
+      o += (Number(raw.weeks)   || 0) * 7 * DAY;
+      o += (Number(raw.days)    || 0) * DAY;
+      o += (Number(raw.hours)   || 0) * 3600000;
+      o += (Number(raw.minutes) || 0) * 60000;
+      if (o > 0) return o;
+      /* fall through for shapes like {duration:"30d"} */
+      raw = raw.duration || raw.interval || raw.period || raw.value;
+      if (raw === null || raw === undefined) return 0;
+    }
+
+    /* numeric: a bare number is a count of days */
+    if (isNum(raw)) return raw > 0 ? raw * DAY : 0;
+
+    if (typeof raw !== "string") return 0;
+    var s = raw.trim().toLowerCase().replace(/\s+/g, " ");
+    if (!s) return 0;
+
+    /* numeric string, e.g. "30" — same days convention as the number form */
+    if (/^\d+(\.\d+)?$/.test(s)) return intervalMs(Number(s));
+
+    /* named intervals */
+    var NAMED = {
+      hourly: 3600000, hour: 3600000, "every hour": 3600000,
+      daily: DAY, day: DAY, "every day": DAY,
+      weekly: 7 * DAY, week: 7 * DAY, "every week": 7 * DAY,
+      monthly: 30 * DAY, month: 30 * DAY, "every month": 30 * DAY,
+      quarterly: 90 * DAY, quarter: 90 * DAY,
+      yearly: 365 * DAY, annually: 365 * DAY, annual: 365 * DAY, year: 365 * DAY
+    };
+    if (NAMED[s]) return NAMED[s];
+
+    /* ISO-8601 duration: P30D, P1M, PT24H */
+    var iso = s.match(/^p(?:(\d+(?:\.\d+)?)y)?(?:(\d+(?:\.\d+)?)m(?!in))?(?:(\d+(?:\.\d+)?)w)?(?:(\d+(?:\.\d+)?)d)?(?:t(?:(\d+(?:\.\d+)?)h)?(?:(\d+(?:\.\d+)?)m)?)?$/);
+    if (iso && (iso[1] || iso[2] || iso[3] || iso[4] || iso[5] || iso[6])) {
+      return (Number(iso[1]) || 0) * 365 * DAY +
+             (Number(iso[2]) || 0) * 30 * DAY +
+             (Number(iso[3]) || 0) * 7 * DAY +
+             (Number(iso[4]) || 0) * DAY +
+             (Number(iso[5]) || 0) * 3600000 +
+             (Number(iso[6]) || 0) * 60000;
+    }
+
+    /* "<n> <unit>" or "<n><unit>", e.g. "30d", "30 days", "1 month" */
+    var m = s.match(/^(\d+(?:\.\d+)?)\s*(years?|months?|weeks?|days?|hours?|hrs?|minutes?|mins?|y|mo|w|d|h|m)$/);
+    if (!m) return 0;
+    var n = parseFloat(m[1]);
+    if (!isFinite(n) || n <= 0) return 0;
+    var unit = m[2];
+    if (/^y/.test(unit)) return n * 365 * DAY;
+    if (/^mo/.test(unit)) return n * 30 * DAY;
+    if (/^w/.test(unit)) return n * 7 * DAY;
+    if (/^d/.test(unit)) return n * DAY;
+    if (/^h/.test(unit)) return n * 3600000;
+    if (/^m/.test(unit)) return n * 60000;
+    return 0;
+  }
+
+  /* ---------- render ---------- */
+
+  function showError(title, detail) {
+    errEl.innerHTML = "<b>" + esc(title) + "</b>" +
+      (detail ? "<br>" + esc(detail) : "");
+    errEl.style.display = "block";
+  }
+
+  function clearError() { errEl.style.display = "none"; errEl.textContent = ""; }
+
+  function render(d) {
+    var usage = d.usage, limit = d.limit, remain = d.limit_remaining;
+    var hasLimit = isNum(limit);
+    var capped = hasLimit && isNum(remain);
+
+    /* hero: remaining when capped, otherwise lifetime spend */
+    var heroLabel = capped ? "Remaining" : "Total spend";
+    var heroNum = capped ? remain : usage;
+    var hp = moneyParts(heroNum);
+    $("heroLabel").textContent = heroLabel;
+    $("heroValue").innerHTML = '<span class="cur">' + hp.cur + "</span>" + esc(hp.val);
+
+    var note;
+    if (capped) {
+      note = "of " + money(limit) + " allowed on this key";
+    } else if (hasLimit) {
+      note = "limit " + money(limit) + " · remaining not reported";
+    } else {
+      note = "no spending limit set on this key";
+    }
+    $("heroNote").textContent = note;
+
+    /* progress bar — only meaningful when a limit exists */
+    if (hasLimit && limit > 0 && isNum(usage)) {
+      var pct = Math.max(0, Math.min(100, (usage / limit) * 100));
+      var bar = $("bar");
+      bar.style.width = pct + "%";
+      bar.style.background = pct >= 90 ? "var(--bad)"
+                            : pct >= 70 ? "var(--warn)"
+                            : "var(--accent)";
+      $("barWrap").style.display = "block";
+      $("barLeft").textContent = money(usage) + " used";
+      $("barRight").textContent = pct.toFixed(1) + "%";
+    } else {
+      $("barWrap").style.display = "none";
+    }
+
+    /* reset bar — how far through the current limit cycle we are */
+    var win = resetWindow(d);
+    if (win && win.start) {
+      var total = win.end.getTime() - win.start.getTime();
+      var elapsed = Date.now() - win.start.getTime();
+      var tpct = total > 0 ? Math.max(0, Math.min(100, (elapsed / total) * 100)) : 100;
+
+      var rb = $("resetBar");
+      rb.style.width = tpct + "%";
+      rb.style.background = isNum(remain) && remain <= 0
+        ? "var(--bad)"
+        : "var(--accent)";
+
+      $("resetDot").style.background = isNum(remain) && remain <= 0
+        ? "var(--bad)" : "var(--accent)";
+
+      $("resetWhen").textContent = relative(win.end);
+      $("resetPct").textContent = tpct.toFixed(0) + "% elapsed";
+
+      $("resetFrom").textContent = exactStamp(win.start);
+      $("resetTo").textContent = exactStamp(win.end);
+      $("resetBarWrap").style.display = "block";
+    } else {
+      $("resetBarWrap").style.display = "none";
+    }
+
+    /* metric tiles */
+    $("mUsage").textContent  = money(usage);
+    $("mLimit").textContent  = hasLimit ? money(limit) : "none";
+    $("mRemain").textContent = capped ? money(remain) : "—";
+
+    /* rows */
+    $("kDay").textContent   = money(d.usage_daily);
+    $("kWeek").textContent  = money(d.usage_weekly);
+    $("kMonth").textContent = money(d.usage_monthly);
+    $("kLabel").textContent = d.label || "—";
+    $("kTier").textContent  = d.is_free_tier ? "Free tier" : "Paid";
+
+    var rl = d.rate_limit;
+    $("kRate").textContent = (rl && isNum(rl.requests))
+      ? rl.requests + " req / " + (rl.interval || "?")
+      : "—";
+
+    /* status pill */
+    var status, cls;
+    if (d.disabled) { status = "Disabled"; cls = "bad"; }
+    else if (capped && remain <= 0) { status = "Exhausted"; cls = "bad"; }
+    else if (capped && limit > 0 && remain / limit <= 0.1) { status = "Low balance"; cls = "warn"; }
+    else { status = "Active"; cls = "good"; }
+    $("kStatus").innerHTML = '<span class="pill ' + cls + '">' + esc(status) + "</span>";
+
+    /* explanatory banner for the invisible-balance case */
+    if (capped) {
+      bannerEl.style.display = "none";
+    } else {
+      bannerEl.innerHTML = "<b>Account balance isn't visible from an API key.</b><br>" +
+        "These figures cover only this key. When no spending limit is set, the API " +
+        "reports lifetime spend but not your remaining account credits — that requires " +
+        "signing in to OpenRouter.";
+      bannerEl.style.display = "block";
+    }
+
+    $("updated").textContent = new Date().toLocaleTimeString();
+    authCard.style.display = "none";
+    resultEl.style.display = "block";
+  }
+
+  /* ---------- fetching ---------- */
+
+  function fetchUsage(key) {
+    return fetch(ENDPOINT, {
+      method: "GET",
+      headers: { "Authorization": "Bearer " + key, "Accept": "application/json" }
+    }).then(function (res) {
+      return res.text().then(function (body) {
+        if (!res.ok) {
+          throw new Error(httpMessage(res.status, body));
+        }
+        var json;
+        try { json = JSON.parse(body); }
+        catch (e) { throw new Error("Unexpected non-JSON response."); }
+        if (!json || typeof json.data !== "object" || json.data === null) {
+          throw new Error("Response did not contain a data object.");
+        }
+        return json.data;
+      });
+    });
+  }
+
+  function httpMessage(status, body) {
+    var detail = "";
+    try {
+      var j = JSON.parse(body);
+      detail = (j && j.error && (j.error.message || j.error)) || "";
+      if (typeof detail !== "string") detail = "";
+    } catch (e) { /* not json */ }
+
+    if (status === 401) return "Invalid API key — check the key and try again." + (detail ? " (" + detail + ")" : "");
+    if (status === 403) return "This key is not permitted to read its own usage." + (detail ? " (" + detail + ")" : "");
+    if (status === 429) return "Rate limited by OpenRouter. Wait a moment and retry.";
+    return "Request failed with HTTP " + status + (detail ? ": " + detail : "");
+  }
+
+  function load() {
+    var key = keyEl.value.trim();
+    clearError();
+    if (!key) { showError("Enter an API key first."); keyEl.focus(); return; }
+    if (!/^sk-or-/.test(key)) {
+      showError("That doesn't look like an OpenRouter key.",
+                "Keys normally start with sk-or-v1- . Continuing anyway may fail.");
+    }
+
+    loadBtn.disabled = true;
+    loadBtn.innerHTML = '<span class="spin"></span> Checking…';
+    try { sessionStorage.setItem(SS_KEY, key); } catch (e) {}
+
+    fetchUsage(key)
+      .then(function (data) {
+        loadBtn.disabled = false;
+        loadBtn.textContent = "Check usage";
+        render(data);
+        startAuto();
+      })
+      .catch(function (e) {
+        loadBtn.disabled = false;
+        loadBtn.textContent = "Check usage";
+        var msg = e && e.message ? e.message : String(e);
+        showError("Couldn't load usage.", msg);
+      });
+  }
+
+  /* ---------- events ---------- */
+
+  loadBtn.addEventListener("click", load);
+
+  keyEl.addEventListener("keydown", function (e) {
+    if (e.key === "Enter") load();
+  });
+
+  $("toggle").addEventListener("click", function () {
+    var hidden = keyEl.type === "password";
+    keyEl.type = hidden ? "text" : "password";
+    this.textContent = hidden ? "Hide" : "Show";
+  });
+
+  $("refresh").addEventListener("click", function () {
+    var key;
+    try { key = sessionStorage.getItem(SS_KEY) || ""; } catch (e) { key = ""; }
+    if (!key) { backToAuth(); return; }
+    var btn = this;
+    btn.disabled = true; btn.textContent = "…";
+    fetchUsage(key)
+      .then(render)
+      .catch(function (e) {
+        clearError();
+        showError("Refresh failed.", e && e.message ? e.message : String(e));
+      })
+      .then(function () { btn.disabled = false; btn.textContent = "Refresh"; });
+  });
+
+  /* ---------- auto update ---------- */
+
+  var AUTO_KEY = "openrouter_usage_auto";
+  var timer = null;      // setInterval handle for the fetch itself
+  var ticker = null;     // 1s countdown handle for the label
+  var nextAt = 0;        // epoch ms of the next scheduled fetch
+
+  /**
+   * Current interval in seconds (0 = off), read from the form.
+   * @returns {number}
+   */
+  function intervalSecs() {
+    var n = Number($("interval").value);
+    return isFinite(n) && n > 0 ? n : 0;
+  }
+
+  /** Human countdown, e.g. "next in 42s" or "next in 4m 12s". */
+  function countdown(ms) {
+    var s = Math.max(0, Math.round(ms / 1000));
+    if (s < 60) return "next in " + s + "s";
+    var m = Math.floor(s / 60);
+    var rs = s % 60;
+    if (m < 60) return "next in " + m + "m " + (rs < 10 ? "0" : "") + rs + "s";
+    return "next in " + Math.floor(m / 60) + "h " + (m % 60) + "m";
+  }
+
+  function paintCountdown() {
+    var label = $("nextTick");
+    if (!nextAt) { label.textContent = ""; return; }
+    label.textContent = countdown(nextAt - Date.now()) + " · ";
+  }
+
+  function stopAuto() {
+    if (timer) { clearInterval(timer); timer = null; }
+    if (ticker) { clearInterval(ticker); ticker = null; }
+    nextAt = 0;
+    paintCountdown();
+  }
+
+  /**
+   * (Re)start the timer for the selected interval.
+   * Silently does nothing when the interval is Off or no key is loaded.
+   */
+  function startAuto() {
+    stopAuto();
+    var secs = intervalSecs();
+    if (!secs) return;
+
+    var key = "";
+    try { key = sessionStorage.getItem(SS_KEY) || ""; } catch (e) {}
+    if (!key) return;
+
+    nextAt = Date.now() + secs * 1000;
+    paintCountdown();
+
+    timer = setInterval(function () {
+      nextAt = Date.now() + secs * 1000;
+      fetchUsage(key)
+        .then(render)
+        .catch(function (e) {
+          // A failed background poll must not wipe the last good numbers.
+          clearError();
+          showError("Auto update failed.", e && e.message ? e.message : String(e));
+        });
+    }, secs * 1000);
+
+    ticker = setInterval(paintCountdown, 1000);
+  }
+
+  $("interval").addEventListener("change", function () {
+    try { sessionStorage.setItem(AUTO_KEY, this.value); } catch (e) {}
+    startAuto();
+  });
+
+  /* pause polling while the tab is hidden; resume on return */
+  document.addEventListener("visibilitychange", function () {
+    if (document.hidden) { stopAuto(); }
+    else { startAuto(); }
+  });
+
+  function backToAuth() {
+    stopAuto();
+    resultEl.style.display = "none";
+    authCard.style.display = "block";
+    $("updated").textContent = "";
+  }
+
+  $("signout").addEventListener("click", function () {
+    try { sessionStorage.removeItem(SS_KEY); } catch (e) {}
+    keyEl.value = "";
+    clearError();
+    backToAuth();
+    keyEl.focus();
+  });
+
+  /* ---------- restore within this tab ---------- */
+
+  (function restore() {
+    /* restore the saved interval first, so the first load can start the timer */
+    var savedAuto = "";
+    try { savedAuto = sessionStorage.getItem(AUTO_KEY) || ""; } catch (e) {}
+    if (savedAuto !== "" && $("interval").querySelector('option[value="' + savedAuto + '"]')) {
+      $("interval").value = savedAuto;
+    }
+
+    var saved = "";
+    try { saved = sessionStorage.getItem(SS_KEY) || ""; } catch (e) {}
+    if (!saved) { keyEl.focus(); return; }
+    keyEl.value = saved;
+    loadBtn.disabled = true;
+    loadBtn.innerHTML = '<span class="spin"></span> Checking…';
+    fetchUsage(saved)
+      .then(function (data) {
+        loadBtn.disabled = false;
+        loadBtn.textContent = "Check usage";
+        render(data);
+        startAuto();
+      })
+      .catch(function () {
+        loadBtn.disabled = false;
+        loadBtn.textContent = "Check usage";
+        backToAuth();
+      });
+  })();
+})();
+</script>
+</body>
+</html>

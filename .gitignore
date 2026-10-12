@@ -1,0 +1,13 @@
+# macOS
+.DS_Store
+
+# Editors
+.vscode/
+.idea/
+*.swp
+
+# Local files that must never be committed
+.env
+.env.*
+*.key
+*credentials*
