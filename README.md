@@ -104,6 +104,30 @@ python3 -m http.server 8000
 # then visit http://localhost:8000
 ```
 
+### Option 3: Download a release
+
+Every release attaches `index.html`, so you can grab a single file without cloning:
+
+**<https://github.com/amir14a/openrouter-usage-info/releases/latest>**
+
+---
+
+## Releases
+
+Releases are cut automatically by [`.github/workflows/release.yml`](.github/workflows/release.yml), which runs on every push to `main` and on manual dispatch.
+
+The version comes from the **[`VERSION`](VERSION)** file at the repository root. Bump it to publish:
+
+```bash
+echo "1.0.1" > VERSION
+git commit -am "Release 1.0.1"
+git push
+```
+
+That creates a `v1.0.1` tag and a release with `index.html` attached. Commits that leave `VERSION` unchanged are a **no-op** — the workflow detects the existing release and exits successfully, so ordinary pushes to `main` never fail. Bumping `VERSION` is what cuts a release.
+
+`VERSION` must be a plain semantic version (`1.2.3`); a leading `v` is tolerated, and anything else fails the job with a clear error.
+
 ---
 
 ## Limitations
